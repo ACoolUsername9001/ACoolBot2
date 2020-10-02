@@ -1,31 +1,40 @@
+import json
 import discord
+import pymongo
 from datetime import datetime
 from discord.ext import commands
 
 
 class ACoolBot(commands.Bot):
     def __init__(self, **options):
-        super().__init__(self.command_prefix, **options)
+        super().__init__(self.command_prefix(), **options)
+        self.mongo_client = pymongo.MongoClient("mongodb://localhost:27017/")
 
-    def get_data(self, guid, category, item, default):
-        return []
+    def get_data(self, guid: str, category: str, default):
+        result = list(self.mongo_client[guid][category].find())
+        if not result:
+            return default
+        return result
 
-    def set_data(self, guid: int, category: str, name: str, val):
-        pass
+    def set_data(self, guid: str, category: str, name: str, val):
+        self.mongo_client[guid][category].insert_one({name: val})
 
     async def on_ready(self):
         await self.change_presence(activity=discord.Activity(type=discord.ActivityType.watching,
-                                                             name="humanity withering away"))
+                                                             name="something"))
 
     @staticmethod
     def command_prefix():
         return '%'
 
-    def on_message(self, message: discord.Message):
-        hooks = self.get_data(message.guild.id, 'hooks', 'on_message', [])
+    async def on_message(self, message: discord.Message):
+        if message.author == self.user:
+            return
+        hooks = self.get_data(str(message.guild.id), 'on_message', [])
         for hook in hooks:
             if self.is_on_message_hook_triggered(message, hook):
-                self.execute_action(message, hook['actions'])
+                if 'actions' in hook:
+                    await self.execute_action(message, hook['actions'])
 
     @staticmethod
     async def execute_action(message: discord.Message, actions):
@@ -94,3 +103,19 @@ class ACoolBot(commands.Bot):
             if not (len(message.attachments) ^ hook['attachments']):
                 return False
         return True
+
+    @commands.command('guid')
+    async def guid(self, ctx):
+        await ctx.send(ctx.guild.id)
+
+
+if __name__ == '__main__':
+    intents = discord.Intents.default()
+    intents.typing = False
+    intents.presences = False
+    intents.bans = False
+    intents.members = True
+
+    bot = ACoolBot(intents=intents)
+    key = json.load(open('DiscordKey.json'))
+    bot.run(key["key"])
