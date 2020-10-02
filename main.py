@@ -69,3 +69,27 @@ class ACoolBot(commands.Bot):
                 embed.add_field(**field)
 
             await channel.send(embed=embed)
+
+    @staticmethod
+    def is_on_message_hook_triggered(message: discord.Message, hook):
+        """
+        :param discord.Message message:
+        :param dictionary hook:
+        :return:
+        """
+        if "contains" in hook:
+            if not hook['contains'] in message.content:
+                return False
+        if 'author' in hook:
+            if not message.author.id in hook['author']:
+                return False
+        if 'roles' in hook:
+            if not any(map(lambda r: r.id in hook['roles'], message.author.roles)):
+                return False
+        if 'channels' in hook:
+            if not message.channel in hook['channels']:
+                return False
+        if 'attachments' in hook['attachments'] and hook['attachments']:
+            if not len(message.attachments):
+                return False
+        return True
