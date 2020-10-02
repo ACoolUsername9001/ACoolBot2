@@ -1,4 +1,5 @@
 import discord
+from datetime import datetime
 from discord.ext import commands
 
 
@@ -6,52 +7,65 @@ class ACoolBot(commands.Bot):
     def __init__(self, **options):
         super().__init__(self.command_prefix, **options)
 
-    def get_data(self, guid, item, default):
+    def get_data(self, guid, category, item, default):
         return []
 
-    def set_data(self, guid: int, name: str, val):
+    def set_data(self, guid: int, category: str, name: str, val):
         pass
 
     async def on_ready(self):
         await self.change_presence(activity=discord.Activity(type=discord.ActivityType.watching,
                                                              name="humanity withering away"))
 
-    def command_prefix(self, bot, message: discord.Message):
-        if not message.guild:
-            return '*'
-        prefixes = self.get_data(message.guild.id, 'prefix', ['*'])
-        return commands.when_mentioned_or(*prefixes)(self, message)
-
-    async def on_voice_state_update(self, member: discord.Member, before: discord.VoiceState,
-                                    after: discord.VoiceState):
-        await self.give_role_voice_channel(member, before, after)
-
     @staticmethod
-    async def give_role_voice_channel(member: discord.Member, before: discord.VoiceState,
-                                      after: discord.VoiceState):
-        if before.channel == after.channel:
-            return
-
-        if after.channel is not None:
-            if before.channel is not None:
-                before_role = discord.utils.find(lambda r: r.name.lower() == before.channel.name.lower(), member.guild.roles)
-            after_role = discord.utils.find(lambda r: r.name.lower() == after.channel.name.lower(), member.guild.roles)
-            if after_role is None:
-                after_role = discord.utils.find(lambda r: r.name.lower() == after.channel.name.lower(),
-                                        after.channel.guild.roles)
-            if after_role is None:
-                after_role = await after.channel.guild.create_role(name=after.channel.name)
-        else:
-            before_role = discord.utils.find(lambda r: r.name == before.channel.name, before.channel.guild.roles)
-        roles = member.roles
-
-        if before.channel is not None:
-            if before_role in roles:
-                await member.remove_roles(before_role, reason='voice connectivity')
-
-        if after.channel is not None:
-            if after_role not in roles:
-                await member.add_roles(after_role, reason='Voice connectivity')
+    def command_prefix():
+        return '%'
 
     def on_message(self, message: discord.Message):
-        pass
+        hooks = self.get_data(message.guild.id, 'hooks', 'on_message', [])
+        for hook in hooks:
+            pass
+
+    @staticmethod
+    async def execute_action(message: discord.Message, actions):
+        if 'give_roles' in actions:
+            roles = list(filter(lambda r: r.id in actions['give_roles'] and r not in message.author.roles, message.guild.roles))
+            if roles:
+                await message.author.add_roles(roles)
+
+        if 'delete_message' in actions:
+            await message.delete(delay=actions['delete_message'])
+
+        if 'write_embed' in actions:
+            action = actions['write_embed']
+            channel = discord.utils.find(lambda c: c.id == action['channel'], message.guild.text_channels)
+            if channel is None:
+                return
+
+            namespace = {'author': message.author,
+                         'created_at': message.created_at.strftime('%y/%m/%d %H:%M:%S'),
+                         'edited_at': message.edited_at.strftime('%y/%m/%d %H:%M:%S'),
+                         'content': message.content,
+                         'attachments': message.attachments,
+                         'message_id': message.id,
+                         'jump_url': message.jump_url}
+
+            embed = action['embed']
+
+            for field, value in embed.copy().iteritems():
+                embed[field] = value.format(**namespace)
+
+            if embed['timestamp']:
+                embed['timestamp'] = datetime.strptime(embed['timestamp'], '%y/%m/%d %H:%M:%S')
+
+            embed = discord.Embed(**embed)
+            if 'footer' in action:
+                embed.set_footer(**action['footer'])
+            if 'image' in action:
+                embed.set_image(url=action['image'])
+            if 'thumbnail' in action:
+                embed.set_thumbnail(url=action['thumbnail'])
+            for field in action['fields']:
+                embed.add_field(**field)
+
+            await channel.send(embed=embed)
