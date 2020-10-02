@@ -4,47 +4,43 @@
         "on_message": 
         [
             {
-                //empty or none-existant means all
                 "name": "ACoolHook",
-                "contains": ["list of strings to match"],
-                "author": ["list of ids here"],
-                "roles": ["list of roles here"],
-                "channels": ["list of channels here"],
+                "contains": [["list of strings to match"], false],
+                "author": [["list of ids here"], false],
+                "roles": [["list of roles here"], false],
+                "channels": [["list of channels here"], false],
                 "attachments": true,
-                "action": "log/delete",
-                "args": ["arguments for the action"],
-                "reverse": false// should the rule be applied to everything not applying to the rules
-            }
+				"actions": {
+					"give_roles": [
+						"list of role-ids"
+					],
+					"delete_message": 0,
+					"write_embed": {
+						"channel": "channel_id",
+						"embed": {
+							"title": "title",
+							"type": "rich",
+							"description": "description",
+							"url": "url",
+							"timestamp": "%y/%m/%d %H:%M:%S",
+							"colour": 10101
+						},
+						"footer": {
+							"text": "string",
+							"icon_url": "string"
+						},
+						"image": "url",
+						"thumbnail": "url",
+						"fields": [
+							{
+								"name": "name",
+								"value": "value",
+								"inline": true
+							}
+						]
+					}
+				}
+			}
         ]
-    },
-    "actions":
-    {
-    	"give_roles": ["list of role-ids"],
-    	"delete_message": 0,// delay in seconds
-    	"write_embed":  {
-    						"channel": "channel_id",
-    						"embed":{
-    									"title": "title",
-    									"type": "rich",
-    									"descrition": "descrition",
-    									"url": "url",
-    									"timestamp": "%y/%m/%d %H:%M:%S",
-    									"colour": 010101,
-    								},
-    						"footer": {
-    							"text": "string",
-    							"icon_url": "string"
-    						},
-    						"image": "url",
-    						"thumbnail": "url",
-    						"fields": 
-    							[
-    								{
-    									"name": "name",
-    									"value": "value",
-    									"inline": true
-    								},
-    							]
-    					}
     }
 }

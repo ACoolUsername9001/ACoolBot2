@@ -24,7 +24,8 @@ class ACoolBot(commands.Bot):
     def on_message(self, message: discord.Message):
         hooks = self.get_data(message.guild.id, 'hooks', 'on_message', [])
         for hook in hooks:
-            pass
+            if self.is_on_message_hook_triggered(message, hook):
+                self.execute_action(message, hook['actions'])
 
     @staticmethod
     async def execute_action(message: discord.Message, actions):
@@ -78,18 +79,18 @@ class ACoolBot(commands.Bot):
         :return:
         """
         if "contains" in hook:
-            if not hook['contains'] in message.content:
+            if not ((hook['contains'][0] in message.content) ^ hook['contains'][1]):
                 return False
         if 'author' in hook:
-            if not message.author.id in hook['author']:
+            if not (message.author.id in hook['author'][0] ^ hook['author'][1]):
                 return False
         if 'roles' in hook:
-            if not any(map(lambda r: r.id in hook['roles'], message.author.roles)):
+            if not (any(map(lambda r: r.id in hook['roles'][0], message.author.roles)) ^ hook['roles'][1]):
                 return False
         if 'channels' in hook:
-            if not message.channel in hook['channels']:
+            if not (message.channel in hook['channels'][0] ^ hook['channels'][1]):
                 return False
-        if 'attachments' in hook['attachments'] and hook['attachments']:
-            if not len(message.attachments):
+        if 'attachments' in hook:
+            if not (len(message.attachments) ^ hook['attachments']):
                 return False
         return True
