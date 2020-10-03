@@ -5,9 +5,10 @@ from datetime import datetime
 from discord.ext import commands
 
 
-class ACoolBot(commands.Bot):
+class ACoolBot(discord.Client):
+
     def __init__(self, **options):
-        super().__init__(self.command_prefix(), **options)
+        super().__init__(**options)
         self.mongo_client = pymongo.MongoClient("mongodb://localhost:27017/")
 
     def get_data(self, guid: str, category: str, default):
@@ -23,10 +24,6 @@ class ACoolBot(commands.Bot):
         await self.change_presence(activity=discord.Activity(type=discord.ActivityType.watching,
                                                              name="something"))
 
-    @staticmethod
-    def command_prefix():
-        return '%'
-
     async def on_message(self, message: discord.Message):
         if message.author == self.user:
             return
@@ -34,10 +31,61 @@ class ACoolBot(commands.Bot):
         for hook in hooks:
             if self.is_on_message_hook_triggered(message, hook):
                 if 'actions' in hook:
-                    await self.execute_action(message, hook['actions'])
+                    namespace = \
+                        {'author': str(message.author),
+                         'created at': message.created_at,
+                         'content': message.content,
+                         'attachments': message.attachments,
+                         'message id': message.id,
+                         'jump url': message.jump_url,
+                         'author mention': message.author.mention}
+                    await self.execute_action(message, hook['actions'], namespace)
+
+    async def on_raw_message_edit(self, payload: discord.RawMessageUpdateEvent):
+        before = None
+        if hasattr(payload, 'cached_message') and payload.cached_message:
+            before = payload.cached_message
+        channel = self.get_channel(payload.channel_id)
+        state = self._get_state()
+        data = payload.data.copy()
+
+        if 'attachments' not in data:
+            data['attachments'] = []
+
+        if 'edited_timestamp' not in data:
+            return
+
+        after = discord.Message(state=state, channel=channel, data=data)
+        if after.author.bot:
+            return
+
+        hooks = self.get_data(str(after.guild.id), 'on_message_edit', [])
+        namespace = {
+            "author": str(after.author),
+            "before content": before.content if isinstance(before, discord.Message) else 'UNKNOWN',
+            "created at": after.created_at,
+            "after content": after.content,
+            "before attachments": before.attachments if before else None,
+            "after attachments": after.attachments,
+            "edited at": after.edited_at,
+            'jump url': after.jump_url,
+            'author mention': after.author.mention,
+            'message id': after.id
+        }
+
+        for hook in hooks:
+            if self.is_on_message_edit_hook_triggered(before, after, hook):
+                await self.execute_action(message=after, actions=hook['actions'], namespace=namespace)
+
+    def is_on_message_edit_hook_triggered(self, before, after, hook):
+        if 'after' in hook and not self.is_on_message_hook_triggered(after, hook['after']):
+            return False
+        if before and 'before' in hook and not self.is_on_message_hook_triggered(before, hook['before']):
+            return False
+        return True
 
     @staticmethod
-    async def execute_action(message: discord.Message, actions):
+    async def execute_action(message: discord.Message, actions, namespace):
         if 'give_roles' in actions:
             roles = list(filter(lambda r: r.id in actions['give_roles'] and r not in message.author.roles, message.guild.roles))
             if roles:
@@ -52,22 +100,13 @@ class ACoolBot(commands.Bot):
             if channel is None:
                 return
 
-            namespace = {'author': message.author,
-                         'created_at': message.created_at.strftime('%y/%m/%d %H:%M:%S'),
-                         'edited_at': message.edited_at.strftime('%y/%m/%d %H:%M:%S') if message.edited_at is not None else '',
-                         'content': message.content,
-                         'attachments': message.attachments,
-                         'message_id': message.id,
-                         'jump_url': message.jump_url,
-                         'author_mention': message.author.mention}
-
             embed = action['embed']
 
             for field, value in embed.copy().items():
                 embed[field] = value.format(**namespace)
 
             if 'timestamp' in embed:
-                embed['timestamp'] = datetime.strptime(embed['timestamp'], '%y/%m/%d %H:%M:%S')
+                embed['timestamp'] = datetime.strptime(embed['timestamp'], '%Y-%m-%d %H:%M:%S.%f')
 
             embed = discord.Embed(**embed)
             if 'footer' in action:
@@ -118,6 +157,6 @@ if __name__ == '__main__':
     intents.bans = False
     intents.members = True
 
-    bot = ACoolBot(intents=intents)
+    bot = ACoolBot(intents=intents, max_messages=4000)
     key = json.load(open('DiscordKey.json'))
     bot.run(key["key"])
