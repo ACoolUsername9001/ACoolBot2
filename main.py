@@ -80,7 +80,7 @@ class ACoolBot(discord.Client):
     def is_on_message_edit_hook_triggered(self, before, after, hook):
         if 'after' in hook and not self.is_on_message_hook_triggered(after, hook['after']):
             return False
-        if before and 'before' in hook and not self.is_on_message_hook_triggered(before, hook['before']):
+        if not before and 'before' in hook and not self.is_on_message_hook_triggered(before, hook['before']):
             return False
         return True
 
