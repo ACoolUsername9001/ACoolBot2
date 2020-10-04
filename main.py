@@ -3,6 +3,7 @@ import discord
 import pymongo
 from datetime import datetime
 from discord.ext import commands
+import copy
 
 
 class ACoolBot(discord.Client):
@@ -54,8 +55,12 @@ class ACoolBot(discord.Client):
 
         if 'edited_timestamp' not in data:
             return
+        if before:
+            after = copy.copy(before)
+            after._update(payload.data)
+        else:
+            after = discord.Message(state=state, channel=channel, data=data)
 
-        after = discord.Message(state=state, channel=channel, data=data)
         if after.author.bot:
             return
 
@@ -80,7 +85,7 @@ class ACoolBot(discord.Client):
     def is_on_message_edit_hook_triggered(self, before, after, hook):
         if 'after' in hook and not self.is_on_message_hook_triggered(after, hook['after']):
             return False
-        if not before and 'before' in hook and not self.is_on_message_hook_triggered(before, hook['before']):
+        if not before or ('before' in hook and not self.is_on_message_hook_triggered(before, hook['before'])):
             return False
         return True
 
