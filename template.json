@@ -35,6 +35,13 @@
 					]
 				}
 		}
+	},
+	"on_message_edit":
+	{
+		"name": "ACoolHook2",
+		"before": "on_message",
+		"after": "on_message",
+		"actions": "same as on_message"
 	}
 }
 
