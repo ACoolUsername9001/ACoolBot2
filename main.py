@@ -96,6 +96,11 @@ class ACoolBot(discord.Client):
             if roles:
                 await message.author.add_roles(roles)
 
+        if 'remove_roles' in actions:
+            roles = list(filter(lambda r: r.id in actions['remove_roles'] and r not in message.author.roles, message.guild.roles))
+            if roles:
+                await message.author.remove_roles(roles)
+
         if 'delete_message' in actions:
             await message.delete(delay=actions['delete_message'])
 
