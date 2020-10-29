@@ -60,7 +60,7 @@ class ACoolBot(discord.Client):
             after._update(payload.data)
         else:
             after = discord.Message(state=state, channel=channel, data=data)
-
+            self._get_state()._messages.append(after)
         if after.author.bot:
             return
 
