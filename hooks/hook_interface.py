@@ -1,6 +1,6 @@
 class HooksManager(object):
     FILTERS = {}
-    HOOK_TYPE = {}
+    CONSTRUCTOR = {}
     ACTIONS = {}
 
     @staticmethod
@@ -44,13 +44,13 @@ class HooksManager(object):
         def decorator(hook_class):
             if not issubclass(hook_class, HookInterface):
                 raise ValueError('hook class must inherit from ' + HookInterface.__name__)
-            HooksManager.HOOK_TYPE[name] = hook_class
+            HooksManager.CONSTRUCTOR[name] = hook_class
             return hook_class
         return decorator
 
     @staticmethod
     async def handle_hooks(hooks_type, hooks_list, *args, **kwargs):
-        hooks_class = HooksManager.HOOK_TYPE[hooks_type]
+        hooks_class = HooksManager.CONSTRUCTOR[hooks_type]
         for hook_data in hooks_list:
             hook = hooks_class(hook_data, *args, **kwargs)
             await hook()
