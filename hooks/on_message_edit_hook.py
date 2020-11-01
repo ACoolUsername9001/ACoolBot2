@@ -2,6 +2,7 @@ import discord
 from datetime import datetime
 
 from hooks.hook_interface import HookInterface, HooksManager
+import utilities.regex as regex
 
 
 @HooksManager.add_hook_handler('on_message_edit')
@@ -73,7 +74,7 @@ class OnMessageEditHook(HookInterface):
 
     @HooksManager.add_filter('attachments')
     def has_attachments(self, message):
-        return len(message.attachments) > 0
+        return len(message.attachments) > 0 or regex.website_image_regex.findall(self._message.content)
 
     @HooksManager.add_filter('channels')
     def in_channel(self, message: discord.Message, list_of_channel_ids):
