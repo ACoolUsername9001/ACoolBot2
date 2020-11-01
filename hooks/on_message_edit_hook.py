@@ -26,16 +26,23 @@ class OnMessageEditHook(HookInterface):
             'message id': after.id
         }
 
+    def _calculate_filter(self, message):
+        for f_name, args in self._filters.items():
+            if f_name in HooksManager.FILTERS[self.__class__.__name__]:
+                if type(args) is not list:
+                    args = [args]
+                yield HooksManager.FILTERS[self.__class__.__name__][f_name](self, message, *args[0:-1]) ^ args[-1]
+
     def _filter(self):
         if self._before_filter:
             if self._before:
-                before_result = (HooksManager.FILTERS[self.__class__.__name__][f_name](self, self._before, *args[0:-1] if type(args) is list else [args][0:-1]) ^ (args[-1] if type(args) is list else [args][-1]) for f_name, args in self._before_filter.items() if f_name in HooksManager.FILTERS[self.__class__.__name__])
+                before_result = self._calculate_filter(self._before)
             else:
                 before_result = (False,)
         else:
             before_result = (True, )
         if self._after_filter:
-            after_result = (HooksManager.FILTERS[self.__class__.__name__][f_name](self, self._after, *args[0:-1] if type(args) is list else [args][0:-1]) ^ (args[-1] if type(args) is list else [args][-1]) for f_name, args in self._after_filter.items() if f_name in HooksManager.FILTERS[self.__class__.__name__])
+            after_result = self._calculate_filter(self._after)
         else:
             after_result = (True,)
 

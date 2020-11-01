@@ -22,9 +22,16 @@ class OnMessageHook(HookInterface):
             'author mention': message.author.mention
             }
 
+    def _calculate_filter(self):
+        for f_name, args in self._filters.items():
+            if f_name in HooksManager.FILTERS[self.__class__.__name__]:
+                if type(args) is not list:
+                    args = [args]
+                yield HooksManager.FILTERS[self.__class__.__name__][f_name](self, *args[0:-1]) ^ args[-1]
+
     def _filter(self):
         if self._filters:
-            filters_result = (HooksManager.FILTERS[self.__class__.__name__][f_name](self, *args[0:-1] if type(args) is list else [args][0:-1]) ^ (args[-1] if type(args) is list else [args][-1]) for f_name, args in self._filters.items() if f_name in HooksManager.FILTERS[self.__class__.__name__])
+            filters_result = self._calculate_filter()
         else:
             filters_result = (True,)
 
