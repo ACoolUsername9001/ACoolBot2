@@ -1,12 +1,14 @@
 {
 	"on_message":
 	{
+		"filters": {
 		"name": "ACoolHook",
 		"contains": [["list of strings to match"], false],
 		"author": [["list of ids here"], false],
 		"roles": [["list of roles here"], false],
 		"channels": [["list of channels here"], false],
-		"attachments": true,
+		"attachments": true
+		},
 		"actions": {
 			"give_roles": ["list of role-ids"],
 			"delete_message": 0,

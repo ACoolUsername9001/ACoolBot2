@@ -81,6 +81,10 @@ class OnMessageHook(HookInterface):
         """
         return str(self._message.channel.id) in list_of_channel_ids
 
+    @HooksManager.add_filter('bot')
+    def is_bot(self):
+        return self._message.author.bot
+
     @HooksManager.add_action('write_embed')
     async def write_embed(self, channel, embed, footer=None, image=None, thumbnail=None, fields=None):
         """

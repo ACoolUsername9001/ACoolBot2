@@ -52,9 +52,6 @@ class ACoolBot(discord.Client):
         else:
             after = discord.Message(state=state, channel=channel, data=data)
 
-        if after.author.bot:
-            return
-
         hook_list = self.get_data(str(after.guild.id), 'on_message_edit', [])
         await HooksManager.handle_hooks('on_message_edit', hook_list, before=before, after=after)
 

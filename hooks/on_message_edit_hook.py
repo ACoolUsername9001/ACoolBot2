@@ -95,6 +95,14 @@ class OnMessageEditHook(HookInterface):
         """
         return str(message.author.id) in author_id
 
+    @HooksManager.add_filter('bot')
+    def is_bot(self, message: discord.Message):
+        """
+        :param discord.Message message:
+        :return bool:
+        """
+        return self._after.author.bot
+
     @HooksManager.add_action('write_embed')
     async def write_embed(self, channel, embed, footer=None, image=None, thumbnail=None, fields=None):
         """
