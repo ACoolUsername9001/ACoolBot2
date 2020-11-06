@@ -30,8 +30,9 @@ class ACoolBot(discord.Client):
     async def on_message(self, message: discord.Message):
         if message.author == self.user:
             return
-        hook_list = self.get_data(str(message.guild.id), 'on_message', [])
-        await HooksManager.handle_hooks('on_message', hook_list, message=message)
+        if message.guild:
+            hook_list = self.get_data(str(message.guild.id), 'on_message', [])
+            await HooksManager.handle_hooks('on_message', hook_list, message=message)
 
     async def on_raw_message_edit(self, payload: discord.RawMessageUpdateEvent):
         before = None
@@ -51,9 +52,9 @@ class ACoolBot(discord.Client):
             after._update(payload.data)
         else:
             after = discord.Message(state=state, channel=channel, data=data)
-
-        hook_list = self.get_data(str(after.guild.id), 'on_message_edit', [])
-        await HooksManager.handle_hooks('on_message_edit', hook_list, before=before, after=after)
+        if after.guild:
+            hook_list = self.get_data(str(after.guild.id), 'on_message_edit', [])
+            await HooksManager.handle_hooks('on_message_edit', hook_list, before=before, after=after)
 
     @commands.command('guid')
     async def guid(self, ctx):
